@@ -1,24 +1,6 @@
-# dependencies
-node_modules/
-Backend/node_modules/
-Frontend/node_modules/
-
-# env (never commit secrets)
 .env
 .env.*
-Backend/.env
-Backend/.env.*
-Frontend/.env
-Frontend/.env.*
-!.env.example
-
-# logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# editor
-.vscode/
-
-# OS
+node_modules/
+**/node_modules/
 .DS_Store
+.vscode/
