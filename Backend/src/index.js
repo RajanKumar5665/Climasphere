@@ -15,12 +15,11 @@ const app = express();
 app.set("trust proxy", 1);
 
 const rawAllowedOrigins = (process.env.CORS_ORIGIN || "").trim();
-const allowedOrigins = rawAllowedOrigins
-  ? rawAllowedOrigins
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-  : [];
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://climasphere-aybkjmltb-rajan-mandals-projects.vercel.app",
+  ...rawAllowedOrigins.split(",").map((s) => s.trim()),
+].filter(Boolean);
 
 const corsOptions = {
   origin(origin, callback) {
