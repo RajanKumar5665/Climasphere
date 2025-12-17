@@ -38,8 +38,8 @@ app.use(cookieParser());
 
 app.use("/api/weather", userRouter);
 
-const WEATHER_API = "http://api.openweathermap.org/data/2.5/weather";
-const POLLUTION_API = "http://api.openweathermap.org/data/2.5/air_pollution";
+const WEATHER_API = "https://api.openweathermap.org/data/2.5/weather";
+const POLLUTION_API = "https://api.openweathermap.org/data/2.5/air_pollution";
 const API_KEY = process.env.OPENWEATHER_API_KEY;
 
 if (!API_KEY) {
