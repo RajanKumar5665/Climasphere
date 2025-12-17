@@ -1,10 +1,14 @@
 {
   "name": "climasphere",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "src/index.js",
   "type": "module",
   "scripts": {
-    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js"
+    "dev": "nodemon -r dotenv/config --experimental-json-modules src/index.js",
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=18"
   },
   "author": "Aditya Shee",
   "license": "ISC",
@@ -13,6 +17,8 @@
     "axios": "^1.12.1",
     "bcryptjs": "^3.0.3",
     "cloudinary": "^2.8.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "json2csv": "^6.0.0-alpha.2",

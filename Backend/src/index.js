@@ -1,25 +1,60 @@
 import express from "express";
 import axios from "axios";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import Weather from "./models/weatherModel.js";
 import cron from "node-cron";
 import connectDB from "./db/index.js";
 import { Parser } from "json2csv";
-import { API } from "../Frontend_API.js";
 import dotenv from "dotenv";
 import userRouter from "./routes/user.routes.js";
 
 dotenv.config();
 
 const app = express();
-app.use(cors({ origin: "http://52.66.188.192:3000", credentials: true }));
+app.set("trust proxy", 1);
+
+const rawAllowedOrigins = (process.env.CORS_ORIGIN || "").trim();
+const allowedOrigins = rawAllowedOrigins
+  ? rawAllowedOrigins
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean)
+  : [];
+
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.length === 0 && process.env.NODE_ENV !== "production") {
+      return callback(null, true);
+    }
+
+    if (allowedOrigins.includes(origin)) return callback(null, true);
+
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
+  credentials: true,
+};
+
+app.use(cors(corsOptions));
+// Express v5 (path-to-regexp v6) does not accept "*" as a route pattern.
+// Use a regex to match all paths for preflight requests.
+app.options(/.*/, cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/weather", userRouter);
 
 const WEATHER_API = "http://api.openweathermap.org/data/2.5/weather";
 const POLLUTION_API = "http://api.openweathermap.org/data/2.5/air_pollution";
-const API_KEY = "5d0e7c16b9f4d577e463c5436404c021";
+const API_KEY = process.env.OPENWEATHER_API_KEY;
+
+if (!API_KEY) {
+  console.warn(
+    "OPENWEATHER_API_KEY is not set. Weather endpoints/cron will fail until it is configured."
+  );
+}
 
 app.get("/", (req, res) => {
   res.send("API is running successfully");
@@ -104,6 +139,10 @@ function normalizeIndiaLocation(loc) {
 
 app.get("/api/weather/:city", async (req, res) => {
   try {
+    if (!API_KEY) {
+      return res.status(500).json({ error: "Server missing OPENWEATHER_API_KEY" });
+    }
+
     const city = req.params.city;
 
     const weatherRes = await axios.get(
@@ -118,7 +157,7 @@ app.get("/api/weather/:city", async (req, res) => {
 
     // 🔁 Reverse geocode (state detect)
     const geoRes = await axios.get(
-      `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`
+      `https://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${API_KEY}`
     );
 
     const geo = geoRes.data[0];
@@ -172,7 +211,7 @@ app.get("/api/reverse-geocode", async (req, res) => {
   const { lat, lon } = req.query;
   try {
     const response = await axios.get(
-      `http://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+      `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
     );
     res.json(response.data);
   } catch (err) {
@@ -280,6 +319,11 @@ app.get("/api/download-csv", async (req, res) => {
 cron.schedule("0 */12 * * *", async () => {
   console.log("Running 12-hour cron job for Indian states");
 
+  if (!API_KEY) {
+    console.warn("Skipping cron job: missing OPENWEATHER_API_KEY");
+    return;
+  }
+
   for (const city of indianStates) {
     try {
       const weatherRes = await axios.get(
@@ -318,8 +362,9 @@ cron.schedule("0 */12 * * *", async () => {
 
 connectDB()
   .then(() => {
-    app.listen(process.env.PORT || 8000, () => {
-      console.log(`⚙️ Server is running at port : ${process.env.PORT}`);
+    const port = Number(process.env.PORT) || 8000;
+    app.listen(port, "0.0.0.0", () => {
+      console.log(`⚙️ Server is running at port : ${port}`);
     });
   })
   .catch((err) => {
